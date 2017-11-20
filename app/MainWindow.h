@@ -7,6 +7,7 @@
 
 #include <QListWidgetItem>
 #include <QMainWindow>
+#include <QLabel>
 
 #include <map>
 

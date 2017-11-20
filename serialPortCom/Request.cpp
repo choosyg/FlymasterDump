@@ -41,6 +41,7 @@ BinaryFlightData requestFlight( SerialPort& port, FlightMetaInfo& info, Callback
 
     std::vector< BinaryBlock > blocks;
     size_t errorCount = 0;
+    size_t bytes = 0;
     std::string request = info.flightRequest();
     while( true ) {
         try {
@@ -56,6 +57,8 @@ BinaryFlightData requestFlight( SerialPort& port, FlightMetaInfo& info, Callback
                 port.request( toString( Status::Cancel ) );
                 break;
             }
+            bytes += block.data.size();
+            cb.notify( Severity::Progress, "Received "+std::to_string(bytes)+" bytes" );
         } catch( std::exception& e ) {
             ++errorCount;
             if( errorCount == 3 ) {

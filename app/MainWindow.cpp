@@ -10,8 +10,10 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
+#include <QProgressDialog>
 
 #include <fstream>
+#include <future>
 
 MainWindow::MainWindow( QWidget* parent ) : QMainWindow( parent ), ui( new Ui::MainWindow ) {
     ui->setupUi( this );
@@ -50,6 +52,7 @@ void MainWindow::on_connectButton_clicked() {
         ui->logBox->append( serial.c_str() );
 
         auto flightInfos = requestFlightInfos( *port, cb_ );
+        ui->listWidget->clear();
         for( const auto& info : flightInfos ) {
             QString flight = QString( "%1: %2-%3-%4 %5:%6:%7 Duration: %8:%9:%10" )
                                  .arg( info.index )
@@ -126,12 +129,30 @@ void MainWindow::on_saveButton_clicked() {
 
     auto port = openPort();
 
-    for( int i = 0; i < ui->listWidget->count(); ++i ) {
-        auto item = ui->listWidget->item( i );
-        if( item->checkState() == Qt::Checked ) {
-            exportToIgc( *port, item, dir );
+    QProgressDialog dlg( this );
+    dlg.setRange(0,0);
+    dlg.setMinimumWidth(400);
+    QString progressPrefix;
+    cb_.setCancelled( false );
+    connect( &dlg, &QProgressDialog::canceled, &cb_, &QtCallback::cancel );
+    connect( &cb_, &QtCallback::notified, this, [&]( Severity s, const QString& msg ){
+        if( s == Severity::Progress ){
+            dlg.setLabelText( progressPrefix + msg );
         }
-    }
+    });
+    auto f = [&](){
+        for( int i = 0; i < ui->listWidget->count(); ++i ) {
+            auto item = ui->listWidget->item( i );
+            if( item->checkState() == Qt::Checked ) {
+                progressPrefix = "Reading " + item->text() +"\n";
+                exportToIgc( *port, item, dir );
+            }
+        }
+        dlg.close();
+    };
+    auto future = std::async( std::launch::async, f );
+    dlg.exec();
+    future.wait();
 }
 
 void MainWindow::onCallbackNotified( Severity s, QString m ) {
@@ -153,6 +174,7 @@ void MainWindow::onCallbackNotified( Severity s, QString m ) {
             m = "[CRITICAL]" + m;
             break;
         default:
+        return;
             break;
     }
     ui->logBox->append( m );

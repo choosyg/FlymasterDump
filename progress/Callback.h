@@ -8,6 +8,7 @@ enum class Severity : unsigned short {
     Warning = 2,
     Error = 3,
     Critical = 4,
+    Progress = 5
 };
 
 class Callback {

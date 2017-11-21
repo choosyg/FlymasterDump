@@ -19,6 +19,9 @@ add_executable( variodump
     main.cpp
     MainWindow.h
     MainWindow.cpp
+    Model.h
+    Model.cpp
+    Property.h
     QtCallback.h
     QtCallback.cpp
     ${UIS}

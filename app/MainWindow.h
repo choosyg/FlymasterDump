@@ -1,6 +1,7 @@
 #pragma once
 
 #include "QtCallback.h"
+#include "Model.h"
 
 #include <serialPortCom/SerialPort.h>
 #include <serialPortCom/ascii/FlightMetaInfo.h>
@@ -8,6 +9,7 @@
 #include <QListWidgetItem>
 #include <QMainWindow>
 #include <QLabel>
+#include <QLineEdit>
 
 #include <map>
 
@@ -30,17 +32,16 @@ private slots:
 
     void on_actionExit_triggered();
 
-    void on_toolButton_clicked();
-
 private:
     Ui::MainWindow* ui;
+    Model model_;
 
     QtCallback cb_;
     std::map< QListWidgetItem*, FlightMetaInfo > itemInfo_;
 
     std::unique_ptr< SerialPort > openPort();
+    void executeAsync( std::function<void(void)> f );
     void exportToIgc( SerialPort& port, QListWidgetItem* item, QString dir );
 
-    void saveUserInput() const;
-    void loadUserInput();
+    void sync( Property<QString>& p, QLineEdit* edit );
 };

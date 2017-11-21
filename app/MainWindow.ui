@@ -65,7 +65,7 @@
       <item row="1" column="1">
        <widget class="QLineEdit" name="gliderEdit">
         <property name="text">
-         <string>Nova Ion 4M</string>
+         <string/>
         </property>
        </widget>
       </item>
@@ -76,10 +76,20 @@
         </property>
        </widget>
       </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="gliderSerialEdit"/>
+      </item>
       <item row="3" column="0">
        <widget class="QLabel" name="label_4">
         <property name="text">
          <string>Site</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLineEdit" name="siteEdit">
+        <property name="text">
+         <string/>
         </property>
        </widget>
       </item>
@@ -90,6 +100,13 @@
         </property>
        </widget>
       </item>
+      <item row="4" column="1">
+       <widget class="QLineEdit" name="contestEdit">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
       <item row="5" column="0">
        <widget class="QLabel" name="label_6">
         <property name="text">
@@ -97,32 +114,8 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="QLineEdit" name="gliderSerialEdit"/>
-      </item>
-      <item row="3" column="1">
-       <widget class="QLineEdit" name="siteEdit">
-        <property name="text">
-         <string>Bassano</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QLineEdit" name="contestEdit">
-        <property name="text">
-         <string>DHV-XC-2017</string>
-        </property>
-       </widget>
-      </item>
       <item row="5" column="1">
        <widget class="QLineEdit" name="pilotIdEdit"/>
-      </item>
-      <item row="6" column="1">
-       <widget class="QToolButton" name="toolButton">
-        <property name="text">
-         <string>Remind these settings</string>
-        </property>
-       </widget>
       </item>
      </layout>
     </item>
@@ -184,7 +177,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

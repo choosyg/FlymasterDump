@@ -1,8 +1,6 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
-#include "QtCallback.h"
-
 #include <serialPortCom/IgcFactory.h>
 #include <serialPortCom/Request.h>
 #include <serialPortCom/SerialPort.h>
@@ -11,6 +9,7 @@
 #include <QMessageBox>
 #include <QSettings>
 #include <QProgressDialog>
+#include <QComboBox>
 
 #include <fstream>
 #include <future>
@@ -23,25 +22,76 @@ MainWindow::MainWindow( QWidget* parent ) : QMainWindow( parent ), ui( new Ui::M
     ui->baudComboBox->addItem( "57600", static_cast< unsigned int >( Speed::BAUD57600 ) );
     ui->baudComboBox->addItem( "115200", static_cast< unsigned int >( Speed::BAUD115200 ) );
     ui->baudComboBox->setCurrentIndex( 2 );
+    connectProperty( model_.serialPortSpeed, this, [&](){
+        auto idx = ui->baudComboBox->findData( static_cast< unsigned int >( model_.serialPortSpeed() ) );
+        ui->baudComboBox->setCurrentIndex( idx );
+    });
+    connect( ui->baudComboBox, &QComboBox::currentTextChanged, this, [&](){
+         model_.serialPortSpeed = static_cast< Speed >( ui->baudComboBox->currentData().toInt() );
+    });
 
-    ui->comComboBox->addItem( "COM1" );
-    ui->comComboBox->addItem( "COM2" );
-    ui->comComboBox->addItem( "COM3" );
-    ui->comComboBox->addItem( "COM4" );
-    ui->comComboBox->addItem( "COM5" );
+    ui->comComboBox->addItem( "COM1", "COM1" );
+    ui->comComboBox->addItem( "COM2", "COM2" );
+    ui->comComboBox->addItem( "COM3", "COM3" );
+    ui->comComboBox->addItem( "COM4", "COM4" );
+    ui->comComboBox->addItem( "COM5", "COM5" );
     ui->comComboBox->setCurrentIndex( 2 );
+    connectProperty( model_.serialPort, this, [&](){
+        auto idx = ui->comComboBox->findData( model_.serialPort() );
+        ui->comComboBox->setCurrentIndex( idx );
+    });
+    connect( ui->comComboBox, &QComboBox::currentTextChanged, this, [&](){
+         model_.serialPort = ui->comComboBox->currentData().toString();
+    });
 
-    loadUserInput();
+    sync( model_.contest, ui->contestEdit );
+    sync( model_.glider, ui->gliderEdit );
+    sync( model_.gliderSerial, ui->gliderSerialEdit );
+    sync( model_.pilotId, ui->pilotIdEdit );
+    sync( model_.pilot, ui->pilotEdit );
+    sync( model_.site, ui->siteEdit );
+
+    load( model_ );
 }
 
 MainWindow::~MainWindow() {
+    persist( model_ );
     delete ui;
 }
 
 std::unique_ptr< SerialPort > MainWindow::openPort() {
-    std::unique_ptr< SerialPort > port( new SerialPort( ui->comComboBox->currentText().toStdString() ) );
-    port->setSpeed( static_cast< Speed >( ui->baudComboBox->currentData().toInt() ) );
+    std::unique_ptr< SerialPort > port( new SerialPort( model_.serialPort().toStdString() ) );
+    port->setSpeed( model_.serialPortSpeed() );
     return port;
+}
+
+void MainWindow::executeAsync(std::function<void ()> f)
+{
+    QProgressDialog dlg( this );
+    dlg.setRange(0,0);
+    dlg.setMinimumWidth(400);
+    cb_.setCancelled( false );
+    QString lastInfo;
+    connect( &dlg, &QProgressDialog::canceled, &cb_, &QtCallback::cancel );
+    connect( &cb_, &QtCallback::notified, this, [&]( Severity s, const QString& msg ){
+        if( s == Severity::Info ){
+            lastInfo = msg;
+            dlg.setLabelText( msg );
+        } else if( s == Severity::Progress ){
+            dlg.setLabelText( lastInfo + "\n" + msg );
+        }
+    });
+    auto execute = [&](){
+        try{
+            f();
+        } catch( std::exception& e ){
+            QMessageBox::critical( this, tr("Error"), tr("Unexpected error: %1").arg(e.what()) );
+        }
+        dlg.close();
+    };
+    auto future = std::async( std::launch::async, execute );
+    dlg.exec();
+    future.wait();
 }
 
 void MainWindow::on_connectButton_clicked() {
@@ -74,8 +124,9 @@ void MainWindow::on_connectButton_clicked() {
     } catch( std::exception& ) {
         QMessageBox::critical( this,
                                "Error",
-                               "Unable to connect to " + ui->comComboBox->currentText() + " with "
-                                   + ui->baudComboBox->currentText() + " baud" );
+                               tr("Unable to connect to %1 with %2 baud")
+                               .arg( model_.serialPort() )
+                               .arg( static_cast<unsigned int>( model_.serialPortSpeed() ) ) );
     }
 }
 
@@ -83,11 +134,11 @@ void MainWindow::exportToIgc( SerialPort& port, QListWidgetItem* item, QString d
     auto info = itemInfo_.at( item );
     auto bfd = requestFlight( port, info, cb_ );
     auto igc = buildIgc( info, bfd );
-    igc.hRecord.pilot = ui->pilotEdit->text().toStdString();
-    igc.hRecord.gliderType = ui->gliderEdit->text().toStdString();
-    igc.hRecord.gliderId = ui->gliderSerialEdit->text().toStdString();
-    igc.hRecord.contest = ui->contestEdit->text().toStdString();
-    igc.hRecord.site = ui->siteEdit->text().toStdString();
+    igc.hRecord.pilot = model_.pilot().toStdString();
+    igc.hRecord.gliderType = model_.glider().toStdString();
+    igc.hRecord.gliderId = model_.gliderSerial().toStdString();
+    igc.hRecord.contest = model_.contest().toStdString();
+    igc.hRecord.site = model_.site().toStdString();
 
     std::string file = dir.toStdString() + "/" + info.date.year + "-" + info.date.month + "-" + info.date.day + ".igc";
     cb_.notify( Severity::Info, "Storing IGC File: " + file );
@@ -97,62 +148,35 @@ void MainWindow::exportToIgc( SerialPort& port, QListWidgetItem* item, QString d
     os.close();
 }
 
-void MainWindow::saveUserInput() const {
-    QSettings settings( "settings.ini", QSettings::IniFormat );
-    settings.beginGroup( "Info" );
-    settings.setValue( "Pilot", ui->pilotEdit->text() );
-    settings.setValue( "PilotID", ui->pilotIdEdit->text() );
-    settings.setValue( "Glider", ui->gliderEdit->text() );
-    settings.setValue( "GliderSerial", ui->gliderSerialEdit->text() );
-    settings.setValue( "Site", ui->siteEdit->text() );
-    settings.setValue( "Contest", ui->contestEdit->text() );
-    settings.endGroup();
-}
-
-void MainWindow::loadUserInput() {
-    QSettings settings( "settings.ini", QSettings::IniFormat );
-    settings.beginGroup( "Info" );
-    ui->pilotEdit->setText( settings.value( "Pilot" ).toString() );
-    ui->pilotIdEdit->setText( settings.value( "PilotID" ).toString() );
-    ui->gliderEdit->setText( settings.value( "Glider" ).toString() );
-    ui->gliderSerialEdit->setText( settings.value( "GliderSerial" ).toString() );
-    ui->siteEdit->setText( settings.value( "Site" ).toString() );
-    ui->contestEdit->setText( settings.value( "Contest" ).toString() );
-    settings.endGroup();
+void MainWindow::sync(Property<QString> &p, QLineEdit *edit){
+    connectProperty( p, this, [&](){
+        if( edit->text() != p() ){
+            edit->setText( p() );
+        }
+    });
+    connect( edit, &QLineEdit::textChanged, this, [&]( const QString& text ){
+        //p = text;
+    });
 }
 
 void MainWindow::on_saveButton_clicked() {
-    auto dir = QFileDialog::getExistingDirectory( this, "Folder to save IGC files" );
+    auto dir = QFileDialog::getExistingDirectory( this, "Folder to save IGC files", model_.recentSaveDir() );
     if( dir.isEmpty() ) {
         return;
     }
+    model_.recentSaveDir = dir;
 
     auto port = openPort();
 
-    QProgressDialog dlg( this );
-    dlg.setRange(0,0);
-    dlg.setMinimumWidth(400);
-    QString progressPrefix;
-    cb_.setCancelled( false );
-    connect( &dlg, &QProgressDialog::canceled, &cb_, &QtCallback::cancel );
-    connect( &cb_, &QtCallback::notified, this, [&]( Severity s, const QString& msg ){
-        if( s == Severity::Progress ){
-            dlg.setLabelText( progressPrefix + msg );
-        }
-    });
     auto f = [&](){
         for( int i = 0; i < ui->listWidget->count(); ++i ) {
             auto item = ui->listWidget->item( i );
             if( item->checkState() == Qt::Checked ) {
-                progressPrefix = "Reading " + item->text() +"\n";
                 exportToIgc( *port, item, dir );
             }
         }
-        dlg.close();
     };
-    auto future = std::async( std::launch::async, f );
-    dlg.exec();
-    future.wait();
+    executeAsync( f );
 }
 
 void MainWindow::onCallbackNotified( Severity s, QString m ) {
@@ -185,6 +209,3 @@ void MainWindow::on_actionExit_triggered() {
     QApplication::quit();
 }
 
-void MainWindow::on_toolButton_clicked() {
-    saveUserInput();
-}

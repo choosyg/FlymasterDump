@@ -65,7 +65,7 @@
       <item row="1" column="1">
        <widget class="QLineEdit" name="gliderEdit">
         <property name="text">
-         <string>Nova Ion 4M</string>
+         <string/>
         </property>
        </widget>
       </item>
@@ -89,7 +89,7 @@
       <item row="3" column="1">
        <widget class="QLineEdit" name="siteEdit">
         <property name="text">
-         <string>Bassano</string>
+         <string/>
         </property>
        </widget>
       </item>
@@ -103,7 +103,7 @@
       <item row="4" column="1">
        <widget class="QLineEdit" name="contestEdit">
         <property name="text">
-         <string>DHV-XC-2017</string>
+         <string/>
         </property>
        </widget>
       </item>

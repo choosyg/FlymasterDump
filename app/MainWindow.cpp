@@ -149,13 +149,13 @@ void MainWindow::exportToIgc( SerialPort& port, QListWidgetItem* item, QString d
 }
 
 void MainWindow::sync(Property<QString> &p, QLineEdit *edit){
-    connectProperty( p, this, [&](){
+    connect( &p, &Property<QString>::propertyChanged, edit, [&, edit](){
         if( edit->text() != p() ){
             edit->setText( p() );
         }
     });
     connect( edit, &QLineEdit::textChanged, this, [&]( const QString& text ){
-        //p = text;
+        p = text;
     });
 }
 

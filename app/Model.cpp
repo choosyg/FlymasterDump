@@ -25,17 +25,17 @@ void load(Model &model){
     QSettings settings( "settings.ini", QSettings::IniFormat );
 
     settings.beginGroup( "Config" );
-    model.serialPort = settings.value( "Port" ).toString();
-    model.serialPortSpeed = static_cast<Speed>( settings.value( "Speed" ).toInt() );
-    model.recentSaveDir = settings.value( "RecentSaveDir" ).toString();
+    model.serialPort = settings.value( "Port", "COM1" ).toString();
+    model.serialPortSpeed = static_cast<Speed>( settings.value( "Speed", 57600 ).toInt() );
+    model.recentSaveDir = settings.value( "RecentSaveDir", "" ).toString();
     settings.endGroup();
 
     settings.beginGroup( "Info" );
-    model.pilot = settings.value( "Pilot" ).toString();
-    model.pilotId = settings.value( "PilotID" ).toString();
-    model.glider = settings.value( "Glider" ).toString();
-    model.gliderSerial = settings.value( "GliderSerial" ).toString();
-    model.site = settings.value( "Site" ).toString();
-    model.contest = settings.value( "Contest" ).toString();
+    model.pilot = settings.value( "Pilot", "" ).toString();
+    model.pilotId = settings.value( "PilotID", "" ).toString();
+    model.glider = settings.value( "Glider", "" ).toString();
+    model.gliderSerial = settings.value( "GliderSerial", "" ).toString();
+    model.site = settings.value( "Site", "" ).toString();
+    model.contest = settings.value( "Contest", "" ).toString();
     settings.endGroup();
 }

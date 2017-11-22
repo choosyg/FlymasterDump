@@ -61,7 +61,7 @@ BinaryFlightData requestFlight( SerialPort& port, FlightMetaInfo& info, Callback
             cb.notify( Severity::Progress, "Received "+std::to_string(bytes)+" bytes" );
         } catch( std::exception& e ) {
             ++errorCount;
-            if( errorCount == 3 ) {
+            if( errorCount == 5 ) {
                 cb.notify( Severity::Critical, std::string( "Aborting: " ) + e.what() );
                 port.request( toString( Status::Cancel ) );
                 break;

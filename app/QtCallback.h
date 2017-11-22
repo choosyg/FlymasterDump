@@ -15,11 +15,16 @@ public:
     bool isCancelled() const override;
 
     void cancel();
-    void setCancelled( bool b );
+
+    size_t count( Severity s ) const;
+    QStringList messages( Severity s ) const;
+    void reset();
 signals:
     void notified( Severity, QString );
     void progressChanged( unsigned int );
 
 private:
     bool isCancelled_ = false;
+
+    std::map< Severity, QStringList > messages_;
 };

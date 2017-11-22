@@ -44,7 +44,6 @@ void SerialPort::writeRequest( const std::string& request ) {
 std::string SerialPort::readResponse() {
     response_ = "";
     dataAvailable_ = false;
-    buffer_[0] = '\0';
     port_.get_io_service().reset();
     port_.async_read_some( buffer( buffer_, 255 ),
                            boost::bind( &SerialPort::read_callback,
@@ -60,20 +59,16 @@ std::string SerialPort::readResponse() {
 }
 
 void SerialPort::read_callback( const boost::system::error_code& error, size_t bytes_transferred ) {
-    if( error && error != boost::asio::error::operation_aborted || !bytes_transferred ) {
+    if( error || !bytes_transferred ) {
         dataAvailable_ = false;
         return;
     }
 
     timeout_.cancel();
 
-    for( size_t i = 0; i < bytes_transferred; ++i ) { //+2 because it ends with \r\n
-        if( buffer_[i] == '\r' ) {
-            continue;
-        }
+    for( size_t i = 0; i < bytes_transferred; ++i ) {
         response_ += buffer_[i];
     }
-    buffer_[0] = '\0';
 
     port_.async_read_some( buffer( buffer_, 255 ),
                            boost::bind( &SerialPort::read_callback,

@@ -16,7 +16,6 @@
 
 MainWindow::MainWindow( QWidget* parent ) : QMainWindow( parent ), ui( new Ui::MainWindow ) {
     ui->setupUi( this );
-    connect( &cb_, SIGNAL( notified( Severity, QString ) ), this, SLOT( onCallbackNotified( Severity, QString ) ) );
 
     ui->baudComboBox->addItem( "9600", static_cast< unsigned int >( Speed::BAUD9600 ) );
     ui->baudComboBox->addItem( "57600", static_cast< unsigned int >( Speed::BAUD57600 ) );
@@ -65,15 +64,15 @@ std::unique_ptr< SerialPort > MainWindow::openPort() {
     return port;
 }
 
-void MainWindow::executeAsync(std::function<void ()> f)
+void MainWindow::executeAsync(std::function<void(QtCallback &)> f)
 {
     QProgressDialog dlg( this );
     dlg.setRange(0,0);
     dlg.setMinimumWidth(400);
-    cb_.setCancelled( false );
+    QtCallback cb;
     QString lastInfo;
-    connect( &dlg, &QProgressDialog::canceled, &cb_, &QtCallback::cancel );
-    connect( &cb_, &QtCallback::notified, this, [&]( Severity s, const QString& msg ){
+    connect( &dlg, &QProgressDialog::canceled, &cb, &QtCallback::cancel );
+    connect( &cb, &QtCallback::notified, this, [&]( Severity s, const QString& msg ){
         if( s == Severity::Info ){
             lastInfo = msg;
             dlg.setLabelText( msg );
@@ -83,7 +82,7 @@ void MainWindow::executeAsync(std::function<void ()> f)
     });
     auto execute = [&](){
         try{
-            f();
+            f( cb );
         } catch( std::exception& e ){
             QMessageBox::critical( this, tr("Error"), tr("Unexpected error: %1").arg(e.what()) );
         }
@@ -98,10 +97,8 @@ void MainWindow::on_connectButton_clicked() {
     try {
         auto port = openPort();
 
-        auto serial = requestSerial( *port, cb_ );
-        ui->logBox->append( serial.c_str() );
-
-        auto flightInfos = requestFlightInfos( *port, cb_ );
+        Callback cb;
+        auto flightInfos = requestFlightInfos( *port, cb );
         ui->listWidget->clear();
         for( const auto& info : flightInfos ) {
             QString flight = QString( "%1: %2-%3-%4 %5:%6:%7 Duration: %8:%9:%10" )
@@ -130,22 +127,59 @@ void MainWindow::on_connectButton_clicked() {
     }
 }
 
-void MainWindow::exportToIgc( SerialPort& port, QListWidgetItem* item, QString dir ) {
-    auto info = itemInfo_.at( item );
-    auto bfd = requestFlight( port, info, cb_ );
-    auto igc = buildIgc( info, bfd );
-    igc.hRecord.pilot = model_.pilot().toStdString();
-    igc.hRecord.gliderType = model_.glider().toStdString();
-    igc.hRecord.gliderId = model_.gliderSerial().toStdString();
-    igc.hRecord.contest = model_.contest().toStdString();
-    igc.hRecord.site = model_.site().toStdString();
+void MainWindow::exportToIgc( SerialPort& port, QListWidgetItem* item, QString dir, QtCallback& cb ) {
+    try{
+        auto info = itemInfo_.at( item );
+        auto bfd = requestFlight( port, info, cb );
+        if( cb.count( Severity::Critical ) == 0  ){
+            auto igc = buildIgc( info, bfd );
+            igc.hRecord.pilot = model_.pilot().toStdString();
+            igc.hRecord.gliderType = model_.glider().toStdString();
+            igc.hRecord.gliderId = model_.gliderSerial().toStdString();
+            igc.hRecord.contest = model_.contest().toStdString();
+            igc.hRecord.site = model_.site().toStdString();
 
-    std::string file = dir.toStdString() + "/" + info.date.year + "-" + info.date.month + "-" + info.date.day + ".igc";
-    cb_.notify( Severity::Info, "Storing IGC File: " + file );
-    std::ofstream os( file );
-    os << igc.build();
-    os.flush();
-    os.close();
+            std::string file = dir.toStdString() + "/" + info.date.year + "-" + info.date.month + "-" + info.date.day + ".igc";
+            cb.notify( Severity::Info, "Storing IGC File: " + file );
+            std::ofstream os( file );
+            os << igc.build();
+            os.flush();
+            os.close();
+        }
+    }catch( std::exception& e){
+        cb.notify( Severity::Critical, tr("Error: %1").arg( e.what() ).toStdString() );
+    }
+
+    if( cb.count( Severity::Critical ) == 0 ){
+        item->setIcon( style()->standardIcon(QStyle::SP_DialogApplyButton) );
+        item->setToolTip( "Successfully stored IGC file" );
+        item->setCheckState( Qt::Unchecked );
+        item->setFlags( item->flags() ^ Qt::ItemIsUserCheckable ^ Qt::ItemIsEnabled );
+    } else {
+        item->setIcon( style()->standardIcon(QStyle::SP_MessageBoxCritical) );
+        item->setToolTip( cb.messages( Severity::Critical ).join("\n") );
+    }
+}
+
+void MainWindow::on_saveButton_clicked() {
+    auto dir = QFileDialog::getExistingDirectory( this, "Folder to save IGC files", model_.recentSaveDir() );
+    if( dir.isEmpty() ) {
+        return;
+    }
+    model_.recentSaveDir = dir;
+
+    auto port = openPort();
+
+    auto f = [&]( QtCallback& cb ){
+        for( int i = 0; i < ui->listWidget->count(); ++i ) {
+            auto item = ui->listWidget->item( i );
+            if( item->checkState() == Qt::Checked ) {
+                cb.reset();
+                exportToIgc( *port, item, dir, cb );
+            }
+        }
+    };
+    executeAsync( f );
 }
 
 void MainWindow::sync(Property<QString> &p, QLineEdit *edit){
@@ -158,54 +192,3 @@ void MainWindow::sync(Property<QString> &p, QLineEdit *edit){
         p = text;
     });
 }
-
-void MainWindow::on_saveButton_clicked() {
-    auto dir = QFileDialog::getExistingDirectory( this, "Folder to save IGC files", model_.recentSaveDir() );
-    if( dir.isEmpty() ) {
-        return;
-    }
-    model_.recentSaveDir = dir;
-
-    auto port = openPort();
-
-    auto f = [&](){
-        for( int i = 0; i < ui->listWidget->count(); ++i ) {
-            auto item = ui->listWidget->item( i );
-            if( item->checkState() == Qt::Checked ) {
-                exportToIgc( *port, item, dir );
-            }
-        }
-    };
-    executeAsync( f );
-}
-
-void MainWindow::onCallbackNotified( Severity s, QString m ) {
-    switch( s ) {
-        case Severity::Debug:
-            return;
-            m = "[DEBUG]   " + m;
-            break;
-        case Severity::Info:
-            m = "[INFO]    " + m;
-            break;
-        case Severity::Warning:
-            m = "[WARNING] " + m;
-            break;
-        case Severity::Error:
-            m = "[ERROR]   " + m;
-            break;
-        case Severity::Critical:
-            m = "[CRITICAL]" + m;
-            break;
-        default:
-        return;
-            break;
-    }
-    ui->logBox->append( m );
-    ui->logBox->update();
-}
-
-void MainWindow::on_actionExit_triggered() {
-    QApplication::quit();
-}
-

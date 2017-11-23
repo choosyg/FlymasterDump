@@ -8,6 +8,7 @@ enum class Speed : unsigned int { BAUD9600 = 9600, BAUD57600 = 57600, BAUD115200
 class SerialPort {
 public:
     SerialPort( const std::string& port );
+    SerialPort( const SerialPort& other ) = delete;
     ~SerialPort();
 
     void setSpeed( Speed s );

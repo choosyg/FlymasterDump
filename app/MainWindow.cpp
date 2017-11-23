@@ -1,20 +1,19 @@
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 
-#include <serialPortCom/IgcFactory.h>
+#include "DumpTask.h"
+#include "FlightListTask.h"
+
 #include <serialPortCom/Request.h>
 #include <serialPortCom/SerialPort.h>
 
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
-#include <QProgressDialog>
 #include <QComboBox>
 
-#include <fstream>
-#include <future>
 
-MainWindow::MainWindow( QWidget* parent ) : QMainWindow( parent ), ui( new Ui::MainWindow ) {
+MainWindow::MainWindow( QWidget* parent ) : QMainWindow( parent ), ui( new Ui::MainWindow ), taskProgress_( processor_, this ) {
     ui->setupUi( this );
 
     ui->baudComboBox->addItem( "9600", static_cast< unsigned int >( Speed::BAUD9600 ) );
@@ -26,7 +25,7 @@ MainWindow::MainWindow( QWidget* parent ) : QMainWindow( parent ), ui( new Ui::M
         ui->baudComboBox->setCurrentIndex( idx );
     });
     connect( ui->baudComboBox, &QComboBox::currentTextChanged, this, [&](){
-         model_.serialPortSpeed = static_cast< Speed >( ui->baudComboBox->currentData().toInt() );
+        model_.serialPortSpeed = static_cast< Speed >( ui->baudComboBox->currentData().toInt() );
     });
 
     ui->comComboBox->addItem( "COM1", "COM1" );
@@ -40,7 +39,7 @@ MainWindow::MainWindow( QWidget* parent ) : QMainWindow( parent ), ui( new Ui::M
         ui->comComboBox->setCurrentIndex( idx );
     });
     connect( ui->comComboBox, &QComboBox::currentTextChanged, this, [&](){
-         model_.serialPort = ui->comComboBox->currentData().toString();
+        model_.serialPort = ui->comComboBox->currentData().toString();
     });
 
     sync( model_.contest, ui->contestEdit );
@@ -51,6 +50,8 @@ MainWindow::MainWindow( QWidget* parent ) : QMainWindow( parent ), ui( new Ui::M
     sync( model_.site, ui->siteEdit );
 
     load( model_ );
+
+    connect( &processor_, &TaskProcessor::finishedTask, this, &MainWindow::onTaskFinished );
 }
 
 MainWindow::~MainWindow() {
@@ -58,107 +59,10 @@ MainWindow::~MainWindow() {
     delete ui;
 }
 
-std::unique_ptr< SerialPort > MainWindow::openPort() {
-    std::unique_ptr< SerialPort > port( new SerialPort( model_.serialPort().toStdString() ) );
-    port->setSpeed( model_.serialPortSpeed() );
-    return port;
-}
-
-void MainWindow::executeAsync(std::function<void(QtCallback &)> f)
-{
-    QProgressDialog dlg( this );
-    dlg.setRange(0,0);
-    dlg.setMinimumWidth(400);
-    QtCallback cb;
-    QString lastInfo;
-    connect( &dlg, &QProgressDialog::canceled, &cb, &QtCallback::cancel );
-    connect( &cb, &QtCallback::notified, this, [&]( Severity s, const QString& msg ){
-        if( s == Severity::Info ){
-            lastInfo = msg;
-            dlg.setLabelText( msg );
-        } else if( s == Severity::Progress ){
-            dlg.setLabelText( lastInfo + "\n" + msg );
-        }
-    });
-    auto execute = [&](){
-        try{
-            f( cb );
-        } catch( std::exception& e ){
-            QMessageBox::critical( this, tr("Error"), tr("Unexpected error: %1").arg(e.what()) );
-        }
-        dlg.close();
-    };
-    auto future = std::async( std::launch::async, execute );
-    dlg.exec();
-    future.wait();
-}
 
 void MainWindow::on_connectButton_clicked() {
-    try {
-        auto port = openPort();
-
-        Callback cb;
-        auto flightInfos = requestFlightInfos( *port, cb );
-        ui->listWidget->clear();
-        for( const auto& info : flightInfos ) {
-            QString flight = QString( "%1: %2-%3-%4 %5:%6:%7 Duration: %8:%9:%10" )
-                                 .arg( info.index )
-                                 .arg( info.date.year.c_str() )
-                                 .arg( info.date.month.c_str() )
-                                 .arg( info.date.day.c_str() )
-                                 .arg( info.time.hours.c_str() )
-                                 .arg( info.time.minutes.c_str() )
-                                 .arg( info.time.seconds.c_str() )
-                                 .arg( info.duration.hours.c_str() )
-                                 .arg( info.duration.minutes.c_str() )
-                                 .arg( info.duration.seconds.c_str() );
-            QListWidgetItem* item = new QListWidgetItem( flight, ui->listWidget );
-            item->setFlags( item->flags() | Qt::ItemIsUserCheckable );
-            item->setCheckState( Qt::Unchecked );
-            itemInfo_.insert( std::make_pair( item, info ) );
-        }
-        ui->saveButton->setEnabled( true );
-    } catch( std::exception& ) {
-        QMessageBox::critical( this,
-                               "Error",
-                               tr("Unable to connect to %1 with %2 baud")
-                               .arg( model_.serialPort() )
-                               .arg( static_cast<unsigned int>( model_.serialPortSpeed() ) ) );
-    }
-}
-
-void MainWindow::exportToIgc( SerialPort& port, QListWidgetItem* item, QString dir, QtCallback& cb ) {
-    try{
-        auto info = itemInfo_.at( item );
-        auto bfd = requestFlight( port, info, cb );
-        if( cb.count( Severity::Critical ) == 0  ){
-            auto igc = buildIgc( info, bfd );
-            igc.hRecord.pilot = model_.pilot().toStdString();
-            igc.hRecord.gliderType = model_.glider().toStdString();
-            igc.hRecord.gliderId = model_.gliderSerial().toStdString();
-            igc.hRecord.contest = model_.contest().toStdString();
-            igc.hRecord.site = model_.site().toStdString();
-
-            std::string file = dir.toStdString() + "/" + info.date.year + "-" + info.date.month + "-" + info.date.day + ".igc";
-            cb.notify( Severity::Info, "Storing IGC File: " + file );
-            std::ofstream os( file );
-            os << igc.build();
-            os.flush();
-            os.close();
-        }
-    }catch( std::exception& e){
-        cb.notify( Severity::Critical, tr("Error: %1").arg( e.what() ).toStdString() );
-    }
-
-    if( cb.count( Severity::Critical ) == 0 ){
-        item->setIcon( style()->standardIcon(QStyle::SP_DialogApplyButton) );
-        item->setToolTip( "Successfully stored IGC file" );
-        item->setCheckState( Qt::Unchecked );
-        item->setFlags( item->flags() ^ Qt::ItemIsUserCheckable ^ Qt::ItemIsEnabled );
-    } else {
-        item->setIcon( style()->standardIcon(QStyle::SP_MessageBoxCritical) );
-        item->setToolTip( cb.messages( Severity::Critical ).join("\n") );
-    }
+    TaskPtr flt = std::make_shared<FlightListTask>( model_ );
+    processor_.schedule( flt );
 }
 
 void MainWindow::on_saveButton_clicked() {
@@ -167,19 +71,13 @@ void MainWindow::on_saveButton_clicked() {
         return;
     }
     model_.recentSaveDir = dir;
-
-    auto port = openPort();
-
-    auto f = [&]( QtCallback& cb ){
-        for( int i = 0; i < ui->listWidget->count(); ++i ) {
-            auto item = ui->listWidget->item( i );
-            if( item->checkState() == Qt::Checked ) {
-                cb.reset();
-                exportToIgc( *port, item, dir, cb );
-            }
+    for( int i = 0; i < ui->listWidget->count(); ++i ) {
+        auto item = ui->listWidget->item( i );
+        if( item->checkState() == Qt::Checked ) {
+            auto task = std::make_shared<DumpTask>( dir, itemInfo_.at( item ), model_ );
+            processor_.schedule( task );
         }
-    };
-    executeAsync( f );
+    }
 }
 
 void MainWindow::sync(Property<QString> &p, QLineEdit *edit){
@@ -191,4 +89,49 @@ void MainWindow::sync(Property<QString> &p, QLineEdit *edit){
     connect( edit, &QLineEdit::textChanged, this, [&]( const QString& text ){
         p = text;
     });
+}
+
+void MainWindow::onTaskFinished(TaskPtr task)
+{
+    DumpTask* d = dynamic_cast<DumpTask*>( task.get() );
+    if( d != nullptr ){
+        QListWidgetItem* item = 0;
+        for( const auto& p : itemInfo_ ){
+            if( p.second.index == d->info().index ){
+                item = p.first;
+            }
+        }
+        if( item == nullptr ){
+            return;
+        }
+        if( task->callback().count( Severity::Critical ) == 0 ){
+            item->setIcon( style()->standardIcon(QStyle::SP_DialogApplyButton) );
+            item->setToolTip( "Successfully stored IGC file" );
+            item->setCheckState( Qt::Unchecked );
+            item->setFlags( item->flags() ^ Qt::ItemIsUserCheckable ^ Qt::ItemIsEnabled );
+        } else {
+            item->setIcon( style()->standardIcon(QStyle::SP_MessageBoxCritical) );
+            item->setToolTip( task->callback().messages( Severity::Critical ).join("\n") );
+        }
+    }
+
+    FlightListTask* flt = dynamic_cast<FlightListTask*>( task.get() );
+    if( flt != nullptr ){
+        if( task->callback().count( Severity::Critical ) == 0 ){
+            ui->listWidget->clear();
+            for( size_t i=0; i<flt->infos().size(); ++i ){
+                QListWidgetItem* item = new QListWidgetItem( flt->list()[i], ui->listWidget );
+                item->setFlags( item->flags() | Qt::ItemIsUserCheckable );
+                item->setCheckState( Qt::Unchecked );
+                itemInfo_.insert( std::make_pair( item, flt->infos()[i] ) );
+            }
+            ui->saveButton->setEnabled( true );
+        } else {
+            QMessageBox::critical( this,
+                                   "Error",
+                                   tr("Unable to connect to %1 with %2 baud")
+                                   .arg( model_.serialPort() )
+                                   .arg( static_cast<unsigned int>( model_.serialPortSpeed() ) ) );
+        }
+    }
 }

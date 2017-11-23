@@ -2,6 +2,8 @@
 
 #include "QtCallback.h"
 #include "Model.h"
+#include "TaskProcessor.h"
+#include "TaskProgressDialog.h"
 
 #include <serialPortCom/SerialPort.h>
 #include <serialPortCom/ascii/FlightMetaInfo.h>
@@ -31,12 +33,11 @@ private slots:
 private:
     Ui::MainWindow* ui;
     Model model_;
+    TaskProcessor processor_;
+    TaskProgressDialog taskProgress_;
 
     std::map< QListWidgetItem*, FlightMetaInfo > itemInfo_;
 
-    std::unique_ptr< SerialPort > openPort();
-    void executeAsync(std::function<void (QtCallback &)> f );
-    void exportToIgc(SerialPort& port, QListWidgetItem* item, QString dir , QtCallback &cb);
-
     void sync( Property<QString>& p, QLineEdit* edit );
+    void onTaskFinished( TaskPtr task );
 };

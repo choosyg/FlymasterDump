@@ -16,6 +16,10 @@ set( UIS
 set_source_files_properties(${UIS} PROPERTIES HEADER_FILE_ONLY TRUE)
 
 add_executable( variodump
+    DumpTask.h
+    DumpTask.cpp
+    FlightListTask.h
+    FlightListTask.cpp
     main.cpp
     MainWindow.h
     MainWindow.cpp
@@ -24,6 +28,10 @@ add_executable( variodump
     Property.h
     QtCallback.h
     QtCallback.cpp
+    TaskProcessor.h
+    TaskProcessor.cpp
+    TaskProgressDialog.h
+    TaskProgressDialog.cpp
     ${UIS}
     )
 set_target_properties(variodump PROPERTIES WIN32_EXECUTABLE YES LINK_FLAGS "/ENTRY:mainCRTStartup")

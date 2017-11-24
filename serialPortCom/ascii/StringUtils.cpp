@@ -3,6 +3,9 @@
 #include <sstream>
 
 StringList split( const std::string& str, char delimiter ) {
+    if( str.empty() ){
+        return StringList();
+    }
     std::vector< std::string > elements;
     std::stringstream ss( str );
     std::string item;

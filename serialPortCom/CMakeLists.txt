@@ -37,8 +37,7 @@ add_executable( serialPortComLibTest
 target_link_libraries( serialPortComLibTest
     progressLib
     serialPortComLib
-    gtest
-    gtest_main
+    ${GTEST_LIBS}
 )
 target_compile_definitions( serialPortComLibTest PRIVATE BOOST_ALL_DYN_LINK _WIN32_WINNT=0x0501)
 add_test(NAME serialPortComLibTest COMMAND ${CMAKE_BINARY_DIR}/serialPortComLib/serialPortComLibTest )

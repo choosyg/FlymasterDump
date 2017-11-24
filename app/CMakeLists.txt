@@ -54,3 +54,10 @@ install( FILES ${QT_DIR}/Qt5Core.dll
                ${QT_DIR}/Qt5Widgets.dll
                ${QT_DIR}/Qt5Gui.dll DESTINATION . )
 install( FILES ${QT_DIR}/../plugins/platforms/qwindows.dll DESTINATION ./platforms )
+
+file( COPY ${QT_DIR}/Qt5Core.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
+file( COPY ${QT_DIR}/Qt5Widgets.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
+file( COPY ${QT_DIR}/Qt5Gui.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
+file( COPY ${QT_DIR}/Qt5Cored.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
+file( COPY ${QT_DIR}/Qt5Widgetsd.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
+file( COPY ${QT_DIR}/Qt5Guid.dll DESTINATION ${PROJECT_BINARY_DIR}/app )

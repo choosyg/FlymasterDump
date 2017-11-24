@@ -13,6 +13,10 @@ link_directories( "${BOOST_DIR}/stage/lib" )
 file( COPY ${BOOST_DIR}/stage/lib/boost_system-vc141-mt-1_65_1.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
 file( COPY ${BOOST_DIR}/stage/lib/boost_date_time-vc141-mt-1_65_1.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
 file( COPY ${BOOST_DIR}/stage/lib/boost_regex-vc141-mt-1_65_1.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
+file( COPY ${BOOST_DIR}/stage/lib/boost_system-vc141-mt-gd-1_65_1.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
+file( COPY ${BOOST_DIR}/stage/lib/boost_date_time-vc141-mt-gd-1_65_1.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
+file( COPY ${BOOST_DIR}/stage/lib/boost_regex-vc141-mt-gd-1_65_1.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
+
 install( FILES
     ${BOOST_DIR}/stage/lib/boost_system-vc141-mt-1_65_1.dll
     ${BOOST_DIR}/stage/lib/boost_date_time-vc141-mt-1_65_1.dll
@@ -22,6 +26,12 @@ install( FILES
 set( GTEST_DIR "${PROJECT_SOURCE_DIR}/../gtest-1.7.0" )
 include_directories( ${GTEST_DIR}/include )
 link_directories( "${GTEST_DIR}/lib" )
+set( GTEST_LIBS
+    optimized gtest
+    debug gtestD
+    optimized gtest_main
+    debug gtest_mainD
+    )
 
 # CTest
 include(CTest)

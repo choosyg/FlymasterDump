@@ -104,7 +104,7 @@ void MainWindow::onTaskFinished(TaskPtr task)
         if( item == nullptr ){
             return;
         }
-        if( task->callback().count( Severity::Critical ) == 0 ){
+        if( task->callback().count( Severity::Critical ) == 0 && ! task->callback().isCancelled() ){
             item->setIcon( style()->standardIcon(QStyle::SP_DialogApplyButton) );
             item->setToolTip( "Successfully stored IGC file" );
             item->setCheckState( Qt::Unchecked );

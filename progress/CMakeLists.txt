@@ -9,8 +9,7 @@ add_executable( progressLibTest
     )
 target_link_libraries( progressLibTest
     progressLib
-    gtest
-    gtest_main
+    ${GTEST_LIBS}
 )
 target_compile_definitions( progressLibTest PRIVATE BOOST_ALL_DYN_LINK _WIN32_WINNT=0x0501)
 add_test(NAME progressLibTest COMMAND ${CMAKE_BINARY_DIR}/progressLib/progressLibTest )

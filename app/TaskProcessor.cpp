@@ -50,8 +50,9 @@ void TaskProcessor::clear() {
     std::unique_lock< std::mutex > lock( mutex_ );
 
     while( !tasks_.empty() ) {
+        auto back = tasks_.back();
         tasks_.pop_back();
-        emit removedTask( tasks_.back() );
+        emit removedTask( back );
     }
     if( currentTask_ != nullptr ) {
         currentTask_->callback().cancel();

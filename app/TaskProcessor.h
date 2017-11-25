@@ -42,8 +42,8 @@ public:
     bool isWorking() const;
     size_t queueSize() const;
 
-    const std::list< std::shared_ptr< Task > >& getScheduledTasks() const;
-    const std::shared_ptr< Task >& getCurrentTask() const;
+    const std::list< std::shared_ptr< Task > >& scheduledTasks() const;
+    const std::shared_ptr< Task >& currentTask() const;
 
     bool isScheduled( std::shared_ptr< Task > task ) const;
     bool isRunning( std::shared_ptr< Task > task ) const;

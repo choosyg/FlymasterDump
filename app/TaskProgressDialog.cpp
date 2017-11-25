@@ -21,7 +21,7 @@ TaskProgressDialog::TaskProgressDialog(TaskProcessor &processor, QWidget *parent
         });
     });
     connect( &processor, &TaskProcessor::finishedTask, this, [&](){
-        if( processor.getScheduledTasks().empty() ){
+        if( processor.scheduledTasks().empty() ){
             hide();
         }
     });

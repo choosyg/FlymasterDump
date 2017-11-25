@@ -71,11 +71,11 @@ size_t TaskProcessor::queueSize() const {
     return tasks_.size();
 }
 
-const std::list< std::shared_ptr< Task > >& TaskProcessor::getScheduledTasks() const {
+const std::list< std::shared_ptr< Task > >& TaskProcessor::scheduledTasks() const {
     return tasks_;
 }
 
-const std::shared_ptr< Task >& TaskProcessor::getCurrentTask() const {
+const std::shared_ptr< Task >& TaskProcessor::currentTask() const {
     return currentTask_;
 }
 

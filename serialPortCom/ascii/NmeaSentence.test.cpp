@@ -5,6 +5,10 @@ TEST( NmeaSentenceTest, shouldFailIfWrongSyntax ) {
     ASSERT_ANY_THROW( NmeaSentence( "PFMSNP,*3A" ) );
 }
 
+TEST( NmeaSentenceTest, shouldFailIfWrongChecksum ) {
+    ASSERT_ANY_THROW( NmeaSentence( "$PFMSNP,*3B" ) );
+}
+
 TEST( NmeaSentenceTest, shouldParse ) {
     ASSERT_EQ( "$PFMSNP,*3A", NmeaSentence( "$PFMSNP,*3A" ).build() );
     ASSERT_EQ( "$PFMDNL,LST,*56", NmeaSentence( "$PFMDNL,LST,*56" ).build() );

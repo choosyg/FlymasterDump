@@ -11,7 +11,6 @@ class QtCallback : public QObject, public Callback {
 public:
     QtCallback( QObject* parent = 0 );
     void notify( Severity s, const std::string& m ) override;
-    void progress( unsigned short percent ) override;
     bool isCancelled() const override;
 
     void cancel();
@@ -21,7 +20,6 @@ public:
     void reset();
 signals:
     void notified( Severity, QString );
-    void progressChanged( unsigned int );
 
 private:
     bool isCancelled_ = false;

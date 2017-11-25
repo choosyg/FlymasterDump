@@ -11,12 +11,11 @@ TaskProgressDialog::TaskProgressDialog(TaskProcessor &processor, QWidget *parent
     connect( &processor, &TaskProcessor::startingTask, this, [&]( std::shared_ptr<Task> task ){
         reset();
         show();
-        connect( &task->callback(), &QtCallback::notified, this, [&]( Severity s, const QString& msg ){
-            if( s == Severity::Info ){
-                lastInfo_ = msg;
-                setLabelText( msg );
-            } else if( s == Severity::Progress ){
-                setLabelText( lastInfo_ + "\n" + msg );
+        QString name = task->name();
+        setLabelText( name );
+        connect( &task->callback(), &QtCallback::notified, this, [&,name]( Severity s, const QString& msg ){
+            if( s == Severity::Progress ){
+                setLabelText( name + "\n" + msg );
             }
         });
     });

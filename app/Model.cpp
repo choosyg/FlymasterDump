@@ -13,9 +13,8 @@ void persist(const Model &model){
 
     settings.beginGroup( "Info" );
     settings.setValue( "Pilot", model.pilot() );
-    settings.setValue( "PilotID", model.pilotId() );
     settings.setValue( "Glider", model.glider() );
-    settings.setValue( "GliderSerial", model.gliderSerial() );
+    settings.setValue( "GliderSerial", model.gliderId() );
     settings.setValue( "Site", model.site() );
     settings.setValue( "Contest", model.contest() );
     settings.endGroup();
@@ -32,9 +31,8 @@ void load(Model &model){
 
     settings.beginGroup( "Info" );
     model.pilot = settings.value( "Pilot", "" ).toString();
-    model.pilotId = settings.value( "PilotID", "" ).toString();
     model.glider = settings.value( "Glider", "" ).toString();
-    model.gliderSerial = settings.value( "GliderSerial", "" ).toString();
+    model.gliderId = settings.value( "GliderSerial", "" ).toString();
     model.site = settings.value( "Site", "" ).toString();
     model.contest = settings.value( "Contest", "" ).toString();
     settings.endGroup();

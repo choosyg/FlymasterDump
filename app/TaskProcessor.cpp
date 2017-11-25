@@ -2,6 +2,18 @@
 
 #include <windows.h>
 
+
+Task::Task(QString name): name_( name ) {}
+
+QtCallback &Task::callback() {
+    return callback_;
+}
+
+QString Task::name() const
+{
+    return name_;
+}
+
 TaskProcessor::TaskProcessor() : goOn_( false ) {
     qRegisterMetaType< std::shared_ptr< Task > >();
     start();
@@ -126,3 +138,4 @@ void TaskProcessor::threadLoop() {
         }
     }
 }
+

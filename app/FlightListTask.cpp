@@ -2,7 +2,11 @@
 
 #include <serialPortCom/Request.h>
 
-FlightListTask::FlightListTask(Model model) :model_(model){}
+FlightListTask::FlightListTask(Model model)
+    : Task( QObject::tr("Requesing flight list") ),
+      model_(model){
+
+}
 
 void FlightListTask::run()
 {

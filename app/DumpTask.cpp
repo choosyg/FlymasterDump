@@ -7,7 +7,8 @@
 #include <fstream>
 
 DumpTask::DumpTask(QString dir, FlightMetaInfo info, Model model)
-    : dir_(dir),
+    : Task( QObject::tr("Requesing flight #%1").arg(info.index) ),
+      dir_(dir),
       info_(info),
       model_(model)
 {
@@ -22,7 +23,7 @@ void DumpTask::run()
         auto igc = buildIgc( info_, bfd );
         igc.hRecord.pilot = model_.pilot().toStdString();
         igc.hRecord.gliderType = model_.glider().toStdString();
-        igc.hRecord.gliderId = model_.gliderSerial().toStdString();
+        igc.hRecord.gliderId = model_.gliderId().toStdString();
         igc.hRecord.contest = model_.contest().toStdString();
         igc.hRecord.site = model_.site().toStdString();
 

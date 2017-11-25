@@ -44,8 +44,7 @@ MainWindow::MainWindow( QWidget* parent ) : QMainWindow( parent ), ui( new Ui::M
 
     sync( model_.contest, ui->contestEdit );
     sync( model_.glider, ui->gliderEdit );
-    sync( model_.gliderSerial, ui->gliderSerialEdit );
-    sync( model_.pilotId, ui->pilotIdEdit );
+    sync( model_.gliderId, ui->gliderIdEdit );
     sync( model_.pilot, ui->pilotEdit );
     sync( model_.site, ui->siteEdit );
 

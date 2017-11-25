@@ -13,15 +13,15 @@
 
 class Task {
 public:
+    Task( QString name );
+    virtual ~Task() = default;
     virtual void run() = 0;
+    QtCallback& callback();
+    QString name() const;
 
-    QtCallback& callback() {
-        return callback_;
-    }
-    virtual ~Task() {
-    }
 private:
     QtCallback callback_;
+    QString name_;
 };
 typedef std::shared_ptr< Task > TaskPtr;
 Q_DECLARE_METATYPE( std::shared_ptr< Task > )

@@ -24,16 +24,13 @@ std::string BRecord::build() const {
 std::string HRecord::build() const {
     std::string str;
     str += "HFDTE" + static_cast< std::string >( flightDate ) + "\n";
+    str += "HFPLTPILOTINCHARGE: " + pilot + "\n";
+    str += "HFGTYGLIDERTYPE: " + gliderType + "\n";
+    str += "HFGIDGLIDERID: " + gliderId + "\n";
+    str += "HFCIDCOMPETITIONID: " + contest + "\n";
+    str += "HFDTMGPSDATUM: WGS84\n";
     str += "HFRFWFIRMWAREVERSION: " + firmwareVersion + "\n";
     str += "HFRHWHARDWAREVERSION: " + hardwareVersion + "\n";
-    str += "HFPLTPILOT: " + pilot + "\n";
-    str += "HFGTYGLIDERTYPE:  1234567\n";
-    str += "HOPLTPILOT: " + pilot + "\n";
-    str += "HOGTYGLIDERTYPE: " + gliderType + "\n";
-    str += "HOGIDGLIDERID: " + gliderId + "\n";
-    str += "HOCIDCOMPETITIONID: " + contest + "\n";
-    str += "HODTM100GPSDATUM: WGS-84\n";
-    str += "HOCCLCOMPETITION CLASS: Paraglider open\n";
     str += "HOSITSite: " + site + "\n";
     return str;
 }

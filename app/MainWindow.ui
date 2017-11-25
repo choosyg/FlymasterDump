@@ -65,7 +65,11 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLineEdit" name="pilotEdit"/>
+       <widget class="QLineEdit" name="pilotEdit">
+        <property name="placeholderText">
+         <string>Your Name</string>
+        </property>
+       </widget>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_2">
@@ -79,17 +83,24 @@
         <property name="text">
          <string/>
         </property>
+        <property name="placeholderText">
+         <string>Paraglider</string>
+        </property>
        </widget>
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>Glider Serial</string>
+         <string>Glider ID</string>
         </property>
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QLineEdit" name="gliderSerialEdit"/>
+       <widget class="QLineEdit" name="gliderIdEdit">
+        <property name="placeholderText">
+         <string>e.g. Nova Mentor 5M</string>
+        </property>
+       </widget>
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="label_4">
@@ -102,6 +113,9 @@
        <widget class="QLineEdit" name="siteEdit">
         <property name="text">
          <string/>
+        </property>
+        <property name="placeholderText">
+         <string>e.g. Tegelberg</string>
         </property>
        </widget>
       </item>
@@ -117,17 +131,10 @@
         <property name="text">
          <string/>
         </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_6">
-        <property name="text">
-         <string>Pilot ID</string>
+        <property name="placeholderText">
+         <string>e.g. DHV-XC-2017</string>
         </property>
        </widget>
-      </item>
-      <item row="5" column="1">
-       <widget class="QLineEdit" name="pilotIdEdit"/>
       </item>
      </layout>
     </item>

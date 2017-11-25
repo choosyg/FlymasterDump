@@ -14,9 +14,8 @@ public:
     Property< QString > recentSaveDir;
 
     Property< QString > pilot;
-    Property< QString > pilotId;
     Property< QString > glider;
-    Property< QString > gliderSerial;
+    Property< QString > gliderId;
     Property< QString > site;
     Property< QString > contest;
 };

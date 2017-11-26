@@ -1,10 +1,3 @@
-find_package(Qt5Core REQUIRED)
-include_directories(${Qt5Core_INCLUDE_DIRS})
-find_package(Qt5Widgets REQUIRED)
-include_directories(${Qt5Widgets_INCLUDE_DIRS})
-#find_package(Qt5Gui REQUIRED)
-#include_directories(${Qt5Gui_INCLUDE_DIRS})
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -12,15 +5,13 @@ set(CMAKE_AUTOUIC ON)
 set( UIS
     MainWindow.ui
 )
-
 set_source_files_properties(${UIS} PROPERTIES HEADER_FILE_ONLY TRUE)
 
-add_executable( variodump
+add_library( varioDumpUiLib
     DumpTask.h
     DumpTask.cpp
     FlightListTask.h
     FlightListTask.cpp
-    main.cpp
     MainWindow.h
     MainWindow.cpp
     Model.h
@@ -34,30 +25,34 @@ add_executable( variodump
     TaskProgressDialog.cpp
     ${UIS}
     )
-set_target_properties(variodump PROPERTIES WIN32_EXECUTABLE YES LINK_FLAGS "/ENTRY:mainCRTStartup")
-target_include_directories(variodump PRIVATE
-    "../serialPortComLib"
-    )
+target_compile_definitions( varioDumpUiLib PRIVATE BOOST_ALL_DYN_LINK _WIN32_WINNT=0x0501)
+
+add_executable( variodump main.cpp )
 target_link_libraries( variodump
+    varioDumpUiLib
     progressLib
     serialPortComLib
     Qt5::Widgets
     Qt5::Core
     Qt5::Gui
 )
+set_target_properties(variodump PROPERTIES WIN32_EXECUTABLE YES LINK_FLAGS "/ENTRY:mainCRTStartup")
 target_compile_definitions( variodump PRIVATE BOOST_ALL_DYN_LINK _WIN32_WINNT=0x0501)
-
 install(TARGETS variodump RUNTIME DESTINATION .)
 
-get_filename_component(QT_DIR ${QT_QMAKE_EXECUTABLE} DIRECTORY)
-install( FILES ${QT_DIR}/Qt5Core.dll
-               ${QT_DIR}/Qt5Widgets.dll
-               ${QT_DIR}/Qt5Gui.dll DESTINATION . )
-install( FILES ${QT_DIR}/../plugins/platforms/qwindows.dll DESTINATION ./platforms )
+add_executable( variodumpTest
+    TaskProcessor.test.cpp
+    )
+target_link_libraries( variodumpTest
+    varioDumpUiLib
+    progressLib
+    serialPortComLib
+    Qt5::Widgets
+    Qt5::Core
+    Qt5::Gui
+    ${GTEST_LIBS}
+)
+target_compile_definitions( variodumpTest PRIVATE BOOST_ALL_DYN_LINK _WIN32_WINNT=0x0501)
+add_test(NAME variodumpTest COMMAND ${CMAKE_BINARY_DIR}/app/variodumpTest )
 
-file( COPY ${QT_DIR}/Qt5Core.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
-file( COPY ${QT_DIR}/Qt5Widgets.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
-file( COPY ${QT_DIR}/Qt5Gui.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
-file( COPY ${QT_DIR}/Qt5Cored.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
-file( COPY ${QT_DIR}/Qt5Widgetsd.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
-file( COPY ${QT_DIR}/Qt5Guid.dll DESTINATION ${PROJECT_BINARY_DIR}/app )
+

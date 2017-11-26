@@ -6,6 +6,7 @@ TaskProgressDialog::TaskProgressDialog(TaskProcessor &processor, QWidget *parent
     setRange(0,0);
     setMinimumWidth(400);
     setMinimumDuration( 0 );
+    setModal( true );
     reset();
     connect( this, &QProgressDialog::canceled, &processor, &TaskProcessor::clear );
     connect( &processor, &TaskProcessor::startingTask, this, [&]( std::shared_ptr<Task> task ){

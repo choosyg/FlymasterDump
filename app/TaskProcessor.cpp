@@ -44,7 +44,11 @@ void TaskProcessor::stop() {
     if( !isRunning() )
         return;
 
-    goOn_ = false;
+    {
+        //changing goOn_ has to be mutex-locked due to the documentation of std::condition_variable
+        std::unique_lock< std::mutex > lock( mutex_ );
+        goOn_ = false;
+    }
     blocker_.notify_all();
     thread_->join();
 }

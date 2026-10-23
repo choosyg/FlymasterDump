@@ -1,5 +1,8 @@
-cmake_minimum_required (VERSION 3.9.0)
+cmake_minimum_required (VERSION 3.20)
 project( VarioDump )
+
+set( CMAKE_CXX_STANDARD 14 )
+set( CMAKE_CXX_STANDARD_REQUIRED ON )
 
 set( VarioDump_VERSION_MAJOR 1 )
 set( VarioDump_VERSION_MINOR 0 )
